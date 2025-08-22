@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Чек-лист РМС — Генератор PDF</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .page-break {
+    page-break-before: always; /* Для печати в PDF */
+    break-before: page; /* Для современных браузеров */
+  }
+  .pdf-section { margin-top:12px; font-size:12px; }
+  .section-title { font-size: 13px;font-weight:700; margin:8px auto; }
+  .pdf-cards { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .pdf-card { border:2px solid var(--accent); padding:8px; border-radius:6px; }
+  .pdf-card .k { font-weight:700; margin-bottom:4px; }
+  .pdf-badges { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+  .pdf-badge { border:2px solid var(--accent); padding:3px 6px; border-radius:6px; font-weight:700; font-size:11px; }
+  /* Компактные карточки */
+  .pdf-cards.compact { gap:6px; }
+  .pdf-cards.compact .pdf-card { padding:6px; border-radius:4px; }
+  .pdf-cards.compact .pdf-card .k { margin-bottom:2px; font-size:11px; font-weight:700; }
+  .pdf-cards.compact .pdf-card .v { font-size:11px; }
+  /* Отступ после таблицы Простые скидки */
+  #pdfDiscountsExtraCards { margin-top:8px; }
+  /* Поддержка фона-логотипа вместо буквы Р */
+  .logo-square, .sq { background-repeat:no-repeat; background-position:center; background-size:cover; }
+  .logo-has-img { color:transparent !important; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <!-- Шапка сайта с логотипом и описанием -->
+    <header>
+      <div class="logo">
+        <div class="logo-square">Р</div>
+        <div>
+          <h1>Проектный отдел РЕСТ</h1>
+          <p class="lead">Интерактивный генератор чек-листа РМС — заполни, отредактируй и выгрузи в PDF</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Панель управления: поля для ввода данных -->
+    <div class="controls">
+      <div class="card" style="flex:1">
+          <!-- Поле ввода названия заведения -->
+          <label for="RestName" style="font-weight:600;">Название заведение</label>
+        <div style="margin-bottom:12px; width:100%">
+          <input id="placeNameInput" placeholder="Название заведения" style="padding:8px; border-radius:8px; border:1px solid #eee; width:100%" />
+        </div>
+        
+        <!-- Выпадающий список для выбора концепции управления -->
+        <div style="margin-bottom:12px; width:100%">
+  <label for="conceptSelect" style="font-weight:600;">Концепция управления</label>
+  <select id="conceptSelect" style="padding:8px; border-radius:8px; border:1px solid #eee; width:100%">
+    <option value="">— Выберите —</option>
+    <option value="RMS">RMS (iikoOffice)</option>
+    <option value="Chain">Chain (iikoChain)</option>
+  </select>
+  <div id="conceptNote" style="font-size:12px; color:#555; margin-top:4px;"></div>
+</div>
+
+<!-- Выпадающий список для Формата обслуживания -->
+        <div style="margin-bottom:12px; width:100%">
+  <label for="serviceFormatSelect" style="font-weight:600;">Формат обслуживания</label>
+  <select id="serviceFormatSelect" style="padding:8px; border-radius:8px; border:1px solid #eee; width:100%">
+    <option value="">— Выберите —</option>
+    <option value="TS">TS</option>
+    <option value="FF">FF</option>
+  </select>
+  <div id="serviceFormatNote" style="font-size:12px; color:#555; margin-top:4px;"></div>
+</div>
+
+  <!-- Выпадающий список для Доставки -->
+  <div style="margin-bottom:12px; width:100%">
+    <label for="deliverySelect" style="font-weight:600;">Доставка</label>
+    <select id="deliverySelect" style="padding:8px; border-radius:8px; border:1px solid #eee; width:100%">
+      <option value="">— Выберите —</option>
+      <option value="Да">Да</option>
+      <option value="Нет">Нет</option>
+    </select>
+    <div id="deliveryNote" style="font-size:12px; color:#555; margin-top:4px;"></div>
+  </div>
+  <!-- Множественный выбор для Авторизации сотрудников -->
+  <div style="margin-bottom:12px; width:100%">
+    <label for="authMethods" style="font-weight:600;">Авторизация сотрудников</label>
+    <select id="authMethods" multiple style="padding:8px; border-radius:8px; border:1px solid #eee; width:100%; height:80px;">
+      <option value="Пин-код">Пин-код</option>
+      <option value="Карты">Карты</option>
+      <option value="Биометрия">Биометрия</option>
+    </select>
+    <div id="authMethodsNote" style="font-size:12px; color:#555; margin-top:4px;">*Можно выбрать несколько вариантов, удерживая Ctrl (Windows) или Cmd (Mac)</div>
+  </div>
+
+  <!-- Поле для ввода списка оборудования и их роли -->
+  <div style="margin-bottom:12px; width:100%">
+    <label for="equipmentList" style="font-weight:600;">Список оборудования и их роль</label>
+    <textarea id="equipmentList" placeholder="Напишите список оборудования и их роль..." style="padding:8px; border-radius:8px; border:1px solid #eee; width:100%; height:100px;"></textarea>
+  </div>
+
+  <!-- Поле для ввода списка складов -->
+  <div style="margin-bottom:12px; width:100%">
+    <label for="storageList" style="font-weight:600;">Список складов</label>
+    <textarea id="storageList" placeholder="Напишите список складов..." style="padding:8px; border-radius:8px; border:1px solid #eee; width:100%; height:100px;"></textarea>
+  </div>
+
+  <!-- Таблица для Места приготовления -->
+  <div style="margin-bottom:12px; width:100%">
+    <label style="font-weight:600;">Места приготовления</label>
+    <table id="prepPlacesTable" border="1" style="border-collapse:collapse; width:100%; font-size:12px;">
+      <tr>
+        <td id="prepPlacesCell" rowspan="1" style="width:30%; font-weight:600;">
+          Места приготовления<br>
+          <span style="font-weight:normal; font-size:12px;">
+            (Наименование, куда печатать(сушеф для отображения), время печати)
+          </span>
+        </td>
+        <td><em>Название</em></td>
+        <td><em>Место печати(Отображения)</em></td>
+        <td><em>Время приготовления</em></td>
+        <td><em>Склад реализации</em></td>
+      </tr>
+    </table>
+    <div style="margin-top:6px;">
+      <button id="addPrepRow" type="button">Добавить строку</button>
+      <button id="removePrepRow" type="button">Удалить строку</button>
+    </div>
+  </div>
+
+  <!-- Таблица с чекбоксами для опций кухни -->
+  <div style="margin-bottom:12px; width:100%">
+    <h3 style="margin-top:16px; margin-bottom:8px;">Опции кухни</h3>
+    <table id="kitchenOptionsTable" style="border-collapse:collapse; width:100%; font-size:12px; margin-top:12px;">
+      <tr>
+        <td style="font-weight:600; width:30%;">Будут терминалы повара</td>
+        <td style="width:10%; text-align:center;">
+          <input type="checkbox" id="chefTerminals">
+        </td>
+        <td style="font-weight:600; width:30%;">Будут вторые экраны</td>
+        <td style="width:10%; text-align:center;">
+          <input type="checkbox" id="secondScreens">
+        </td>
+      </tr>
+      <tr>
+        <td style="font-weight:600;">Будут электронные очереди</td>
+        <td style="text-align:center;">
+          <input type="checkbox" id="electronicQueues">
+        </td>
+        <td style="font-weight:600;">Будут интегрированные весы</td>
+        <td style="text-align:center;">
+          <input type="checkbox" id="integratedScales">
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Таблица для Типы оплат -->
+  <div style="margin-bottom:12px; width:100%">
+    <h3 style="margin-top:16px; margin-bottom:8px;">Типы оплат</h3>
+    <table id="paymentTypesTable" border="1" style="border-collapse:collapse; width:100%; font-size:12px;">
+      <tr>
+        <td id="paymentTypesCell" rowspan="1" style="width:30%; font-weight:600;">
+          Типы оплат<br>
+          <span style="font-weight:normal; font-size:12px;">
+            (Базовые - наличные, безналичные, банковские, внешние)
+          </span>
+        </td>
+        <td><em>Название</em></td>
+        <td><em>Фискальный</em></td>
+        <td><em>Принимать из вне</em></td>
+        <td><em>Комбинируется ли с другими</em></td>
+        <td><em>Логика работы</em></td>
+      </tr>
+    </table>
+    <div style="margin-top:6px;">
+      <button id="addPaymentRow" type="button">Добавить строку</button>
+      <button id="removePaymentRow" type="button">Удалить строку</button>
+    </div>
+  </div>
+  <!-- Дополнительные чекбоксы под типами оплат -->
+  <table id="PayTypesOptionsTable" style="border-collapse:collapse; width:100%; font-size:12px; margin-top:12px;">
+      <tr>
+        <td style="font-weight:600; width:30%;">Необходимо настроить сложные типы оплат</td>
+        <td style="width:10%; text-align:center;">
+          <input type="checkbox" id="complexPayments">
+        </td>
+        <td style="font-weight:600; width:30%;">Необходимо настроить внесения/изъятия</td>
+        <td style="width:10%; text-align:center;">
+          <input type="checkbox" id="cashInOut">
+        </td>
+  </table>
+  
+  <!-- Таблица для Залы -->
+  <div class="page-break"></div>
+  <div style="margin-bottom:12px; width:100%">
+    <h3 style="margin-top:16px; margin-bottom:8px;">Залы</h3>
+    <table id="hallsTable" border="1" style="border-collapse:collapse; width:100%; font-size:12px;">
+      <tr>
+        <td id="hallsCell" rowspan="1" style="width:30%; font-weight:600;">
+          Залы
+        </td>
+        <td><em>Название</em></td>
+        <td><em>Количество столов</em></td>
+      </tr>
+    </table>
+    <div style="margin-top:6px;">
+      <button id="addHallRow" type="button">Добавить строку</button>
+      <button id="removeHallRow" type="button">Удалить строку</button>
+    </div>
+  </div>
+
+  <!-- Кассовые смены -->
+  <table id="cashShiftsOptionsTable" class="options-table" style="margin-bottom:12px; width:100%;">
+    <thead>
+      <tr>
+        <h3 style="margin-top:16px; margin-bottom:8px;">Кассовые смены</h3>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Перенос заказов на следующий день</td>
+        <td><input type="checkbox" id="carryOverOrders"></td>
+      </tr>
+      <tr>
+        <td>Личные смены</td>
+        <td>
+          <select id="personalShifts">
+            <option value="">—</option>
+            <option value="Закрывать">Закрывать</option>
+            <option value="Переносить">Переносить</option>
+            <option value="На усмотрение менеджера">На усмотрение менеджера</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <td>Нумерация заказов</td>
+        <td>
+          <select id="orderNumbering">
+            <option value="">—</option>
+            <option value="Последовательно">Последовательно</option>
+            <option value="Каждую КС с 1">Каждую КС с 1</option>
+          </select>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Система налогообложения и маркировка -->
+  <table id="taxOptionsTable" class="options-table" style="margin-bottom:12px; width:100%;">
+    <thead>
+      <tr>
+        <h3 style="margin-top:16px; margin-bottom:8px;">Система налогообложения, маркировка, ЕГАИС</h3>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Система налогообложения</td>
+        <td>
+          <select id="taxSystem">
+            <option value="">—</option>
+            <option value="Патент">Патент</option>
+            <option value="УСН - Доход">УСН - Доход</option>
+            <option value="УСН Доход-Расход">УСН Доход-Расход</option>
+            <option value="ОСН">ОСН</option>
+            <option value="АВТОУСН">АВТОУСН</option>
+          </select>
+        </td>
+      </tr>
+    <tr>
+        <td>НДС</td>
+        <td>
+          <select id="NDS">
+            <option value="">—</option>
+            <option value="5%">5%</option>
+            <option value="7%">7%</option>
+            <option value="10%">10%</option>
+            <option value="20%">20%</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <td>ЧЕСТНЫЙ ЗНАК Настраиваем базовый пакет ТН ВЭД (Вода, молоко, соки, пиво)</td>
+        <td>
+          <select id="honestSign">
+            <option value="">—</option>
+            <option value="Не ведётся">Не ведётся</option>
+            <option value="В iiko">В iiko</option>
+            <option value="В DocsInBox">В DocsInBox</option>
+          </select>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Алкоголь -->
+  <table id="alcoholOptionsTable" class="options-table" style="margin-bottom:12px; width:100%;">
+    <thead>
+      <tr>
+        <h3 style="margin-top:16px; margin-bottom:8px;">Алкоголь</h3>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>ЕГАИС</td>
+        <td>
+          <select id="egais">
+            <option value="">—</option>
+            <option value="Не ведётся">Не ведётся</option>
+            <option value="В iiko">В iiko</option>
+            <option value="В DocsInBox">В DocsInBox</option>
+            <option value="В другой системе">В другой системе</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <td>Бутылочный алкоголь</td>
+        <td><input type="checkbox" id="bottleAlcohol"></td>
+      </tr>
+      <tr>
+        <td>Разливной алкоголь</td>
+        <td><input type="checkbox" id="draftAlcohol"></td>
+      </tr>
+      <tr>
+        <td>Крепкий алкоголь</td>
+        <td><input type="checkbox" id="strongAlcohol"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Новый блок: Печатать отчеты при закрытии КС -->
+  <div style="margin-bottom:12px; width:100%">
+    <h3 style="margin-top:16px; margin-bottom:8px;">Печатать отчеты при закрытии КС:</h3>
+    <select id="printReports" multiple style="padding:8px; border-radius:8px; border:1px solid #eee; width:100%; height:120px;">
+      <option value="Базовая настройка">Базовая настройка</option>
+      <option value="011 Общая выручка по типам с налогами (включая списания) аналог 041">011 Общая выручка по типам с налогами (включая списания) аналог 041</option>
+      <option value="013 Общая выручка по официантам">013 Общая выручка по официантам</option>
+      <option value="015 Краткий отчет по открытым заказам и продажам в разрезе залов">015 Краткий отчет по открытым заказам и продажам в разрезе залов</option>
+      <option value="021 Общий расход блюд (023+024) аналог 044">021 Общий расход блюд (023+024) аналог 044</option>
+      <option value="036 Отчет по скидкам и надбавкам">036 Отчет по скидкам и надбавкам</option>
+      <option value="039 Отчет по вскрытиям тары">039 Отчет по вскрытиям тары</option>
+      <option value="041 Выручка по типам с налогами">041 Выручка по типам с налогами</option>
+      <option value="047 Чеки по типам оплаты за смену">047 Чеки по типам оплаты за смену</option>
+      <option value="048 Итого по смене">048 Итого по смене</option>
+      <option value="050 Отчет по доставкам">050 Отчет по доставкам</option>
+      <option value="052 Отчет по внесениям и изъятиям">052 Отчет по внесениям и изъятиям</option>
+      <option value="X - отчет">X - отчет</option>
+    </select>
+    <div style="font-size:12px; color:#555; margin-top:4px;">*Можно выбрать несколько вариантов, удерживая Ctrl (Windows) или Cmd (Mac)</div>
+  </div>
+
+  <!-- Сотрудники и должности -->
+  <div style="margin-bottom:12px; width:100%">
+    <h3 style="margin-top:16px; margin-bottom:8px;">Сотрудники и должности</h3>
+    <table id="positionsTable" border="1" style="border-collapse:collapse; width:100%; font-size:12px;">
+      <tr>
+        <td id="positionsCell" rowspan="1" style="width:30%; font-weight:600;">
+          Должности
+        </td>
+        <td><em>Название</em></td>
+        <td><em>Описание прав доступа* **</em></td>
+      </tr>
+    </table>
+    <div style="margin-top:6px;">
+      <button id="addPositionRow" type="button">Добавить строку</button>
+      <button id="removePositionRow" type="button">Удалить строку</button>
+    </div>
+  </div>
+<table id="EmployerOptionsTable" class="options-table" style="margin-bottom:12px; width:100%;">
+    <tbody>
+      <tr>
+        <td>Сотрудники</td>
+        <td>
+          <select id="employeesSelect" style="padding:4px 8px; border-radius:6px; border:1px solid #ccc; flex:1;">
+        <option value="">—</option>
+        <option value="Заводит компания Мультибит">Заводит компания Мультибит</option>
+        <option value="Клиент заводит самостоятельно (Отправляется инструкция)">Клиент заводит самостоятельно (Отправляется инструкция)</option>
+      </select>
+      </td>
+      </tr>
+      <tr>
+        <td>Необходимо настроить автоматический расчет заработных плат</td>
+        <td><input type="checkbox" id="autoPayroll"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Таблица для Простые скидки -->
+  <div style="margin-bottom:12px; width:100%">
+      <h3 style="margin-top:16px; margin-bottom:8px;">Скидки и бонусы</h3>
+    <table id="simpleDiscountsTable" border="1" style="border-collapse:collapse; width:100%; font-size:12px;">
+      <tr>
+        <td id="simpleDiscountsCell" rowspan="1" style="width:30%; font-weight:600;">
+          Простые скидки
+        </td>
+        <td><em>Название</em></td>
+        <td><em>Логика работы</em></td>
+      </tr>
+    </table>
+    <div style="margin-top:6px;">
+      <button id="addSimpleDiscountRow" type="button">Добавить строку</button>
+      <button id="removeSimpleDiscountRow" type="button">Удалить строку</button>
+    </div>
+  </div>
+<table id="BonusOptionsTable" class="options-table" style="margin-bottom:12px; width:100%;">
+    <tbody>
+      <tr>
+        <td>Необходимо настроить бонусную программу	</td>
+        <td><input type="checkbox" id="bonusProgram"></td>
+      </tr>
+      <tr>
+        <td>Необходимо настроить сложные скидки (1+1, счастливые часы и тд)</td>
+        <td><input type="checkbox" id="complexDiscounts"></td>
+      </tr>
+    </tbody>
+  </table>
+  <!-- Чекбоксы для бонусной программы и сложных скидок -->
+  <!-- Новые поля: Город доставки и Город по-умолчанию, далее контейнер для разрыва страницы -->
+  <div class="page-break">
+    <div style="margin-bottom:12px; width:100%;">
+      <h3 style="margin-top:16px; margin-bottom:8px;">Доставка</h3>
+      <label for="deliveryCity" style="font-weight:600;">Город доставки</label>
+      <input type="text" id="deliveryCity" placeholder="Город доставки" style="padding:8px; border-radius:8px; border:1px solid #eee; width:100%;" />
+    </div>
+    <div style="margin-bottom:12px; width:100%;">
+      <label for="defaultCity" style="font-weight:600;">Город по-умолчанию</label>
+      <input type="text" id="defaultCity" placeholder="Город по-умолчанию" style="padding:8px; border-radius:8px; border:1px solid #eee; width:100%;" />
+    </div>
+    <!-- Новая строка: Стикеры доставки и Момент печати стикера доставки -->
+
+
+
+  <div style="margin-bottom:12px; width:100%">
+    <table id="DeliveryOptionsTable1" style="border-collapse:collapse; width:100%; font-size:14px; margin-top:12px;">
+      <tr>
+        <td>Стикеры доставки</td>
+        <td style="width:15%; text-align:center;">
+          <input type="checkbox" id="deliveryStickersNew" style="margin-left:8px; border-radius:4px;">
+        </td>
+        <td>Момент печати стикера доставки</td>
+        <td style="width:30%; text-align:center;">
+          <select id="deliveryStickerPrintMomentNew" style="padding:8px; border-radius:8px; border:1px solid #eee; width:100%;">
+          <option value="">—</option>
+          <option value="При печати сервисного чека">При печати сервисного чека</option>
+          <option value="При печати накладной">При печати накладной</option>
+        </select>
+        </td>
+      </tr>
+      <tr>
+        <td style="width: 15%;">Накладная доставки</td>
+        <td style="text-align:center;">
+          <input type="checkbox" id="deliveryInvoiceNew" style="margin-left:8px; border-radius:4px;">
+      </label>
+        </td>
+        <td>Момент печати накладной доставки</td>
+        <td style="width:30%;text-align:center;">
+          <select id="deliveryInvoicePrintMomentNew" style="padding:8px; border-radius:8px; border:1px solid #eee; width:100%;">
+          <option value="">—</option>
+          <option value="Вручную">Вручную</option>
+          <option value="При начале приготовления">При начале приготовления</option>
+          <option value="При окончании приготовления">При окончании приготовления</option>
+          <option value="При оплате заказа">При оплате заказа</option>
+          <option value="При отправке заказа">При отправке заказа</option>
+        </select>
+        </td>
+      </tr>
+    </table>
+
+
+<table id="DeliveryOptionsTable1" style="border-collapse:collapse; width:100%; font-size:14px; margin-top:12px;">
+      <tr>
+        <td style="width: 15%;">Количество накладных</td>
+        <td>
+          <input type="number" id="deliveryInvoiceCount" value="1" style="padding:8px; border-radius:8px; border:1px solid #eee; width:100%;">
+        </td
+        </tr>
+      <tr>
+        <td style="width: 15%;">Оплата доставки при отправке</td>
+        <td style="text-align:center;">
+          <input type="checkbox" id="deliveryPaymentOnSend" style="margin-left:8px;">
+      </label>
+        </td>
+        <td style="width:30%;">Автоматическое приготовление доставки</td>
+        <td style="width:30%;text-align:center;">
+          <input type="checkbox" id="autoDeliveryCooking" style="margin-left:8px;">
+      </label>
+        </td>
+      </tr>
+      <tr>
+        <td style="width: 15%;">Подтверждение доставок</td>
+        <td style="text-align:center;">
+          <input type="checkbox" id="deliveryConfirmation" style="margin-left:8px;">
+      </label>
+        </td>
+        <td style="width:30%;">Картография</td>
+        <td style="width:30%;text-align:center;">
+          <input type="checkbox" id="cartography" style="margin-left:8px;">
+      </label>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <!-- Выпадающий список для установки iikoOffice/iikoChain -->
+<div style="margin-bottom:12px; width:100%">
+  <label for="installationSelect" style="font-weight:600;">Установка iikoOffice/iikoChain</label>
+  <select id="installationSelect" style="padding:8px; border-radius:8px; border:1px solid #eee; width:100%">
+    <option value="">— Выберите —</option>
+    <option value="Устанавливает компания Мультибит">Устанавливает компания Мультибит</option>
+    <option value="Клиент устанавливает самостоятельно (Отправляется инструкция)">Клиент устанавливает самостоятельно (Отправляется инструкция)</option>
+  </select>
+</div>
+ <!-- Выпадающий список для Эксклюзивного режима -->
+ <div style="margin-bottom:12px; width:100%">
+   <label for="exclusiveMode" style="font-weight:600;">Эксклюзивный режим</label>
+   <select id="exclusiveMode" style="padding:8px; border-radius:8px; border:1px solid #eee; width:100%">
+     <option value="">— Выберите —</option>
+     <option value="Да">Да</option>
+     <option value="Нет">Нет</option>
+   </select>
+ </div>
+ <!-- Выпадающий список для Даём права в iikoWeb -->
+ <div style="margin-bottom:12px; width:100%">
+   <label for="iikoWebRights" style="font-weight:600;">Даём права в iikoWeb</label>
+   <select id="iikoWebRights" style="padding:8px; border-radius:8px; border:1px solid #eee; width:100%">
+     <option value="">— Выберите —</option>
+     <option value="Да">Да</option>
+     <option value="Нет">Нет</option>
+   </select>
+ </div>
+  <div style="margin-bottom:12px; width:100%">
+    <label for="AdvancedSettings" style="font-weight:600;">Дополнительные реализации</label>
+    <textarea id="AdvancedSettings" placeholder="Напишите список реализаций..." style="padding:8px; border-radius:8px; border:1px solid #eee; width:100%; height:100px;"></textarea>
+  </div>
+    <!-- Кнопки для обновления предпросмотра и генерации PDF -->
+    <div style="flex: 1 1 100%; max-width:100%" class="card">
+      <p style="margin:0 0 8px;font-weight:700">Действия</p>
+      <p style="margin:0 0 12px">Управление строками, предпросмотр и генерация PDF</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button id="previewBtn" class="ghost">Обновить предпросмотр</button>
+        <button id="genPDF">Скачать PDF</button>
+      </div>
+    </div>
+  </div>
+
+    <!-- Предпросмотр PDF-документа -->
+    <div class="card">
+      <p style="margin:0 0 8px;font-weight:700">Предпросмотр PDF</p>
+      <div id="previewArea">
+        <div id="pdfSheet" class="pdf-sheet">
+          <div class="pdf-header">
+            <div class="pdf-logo">
+              <div>
+                <div class="pdf-title">Чек-лист РМС</div>
+                <div class="pdf-meta">Проектный отдел РЕСТ</div>
+              </div>
+            </div>
+            <div class="pdf-meta">Дата: <span id="pdfDate"></span></div>
+          </div>
+
+          <!-- Здесь будет отображаться название заведения -->
+          <div id="pdfPlaceName" style="text-align:center; font-size:12px; font-weight:700; color:#000; margin-top:20px"></div>
+          <!-- Здесь будет отображаться Концепция заведения -->
+          <div class="section-title">Общие параметры</div>
+          <div id="pdfConcept" style="margin-top:6px; font-size:12px; font-weight:600;"></div>
+<div id="pdfConceptNote" style="font-size:12px; color:#363636; margin-top:2px;"></div>
+<div id="pdfServiceFormat" style="margin-top:6px; font-size:12px; font-weight:600;"></div>
+<div id="pdfServiceFormatNote" style="font-size:12px; color:#363636; margin-top:2px;"></div>
+<div id="pdfDelivery" style="margin-top:6px; font-size:12px; font-weight:600;"></div>
+<div id="pdfDeliveryNote" style="font-size:12px; color:#363636; margin-top:2px;"></div>
+<div id="pdfAuthMethods" style="margin-top:6px; font-size:12px; font-weight:600;"></div>
+<div class="section-title">Список оборудования и их роль</div>
+<table id="pdfEquipmentTable" style="width:100%; border-collapse:collapse; margin-top:6px; border:2px solid var(--accent); font-size:12px;">
+    <tr>
+      <td style="border:2px solid var(--accent); padding:6px; font-weight:600; width:40%; font-size:12px;">Список оборудования и их роль</td>
+      <td id="pdfEquipmentValue" style="border:2px solid var(--accent); padding:6px; width:60%; font-size:12px;"></td>
+    </tr>
+  </table>
+  <div class="section-title">Список складов</div>
+  <table id="pdfStorageTable" style="width:100%; border-collapse:collapse; margin-top:6px; border:2px solid var(--accent); font-size:12px;">
+    <tr>
+      <td style="border:2px solid var(--accent); padding:6px; font-weight:600; width:40%; font-size:12px;">Список складов</td>
+      <td id="pdfStorageValue" style="border:2px solid var(--accent); padding:6px; width:60%; font-size:12px;"></td>
+    </tr>
+  </table>
+
+  <div class="section-title">Места приготовления</div>
+  <table id="pdfPrepPlacesTable" style="width:100%; border-collapse:collapse; margin-top:6px; border:2px solid var(--accent); font-size:12px;">
+    <tr>
+      <td id="pdfPrepPlacesCell" rowspan="1" style="border:2px solid var(--accent); padding:6px; font-weight:600; width:30%; font-size:12px;">
+        Места приготовления<br>
+        <span style="font-weight:normal; font-size:12px;">
+          (Наименование, куда печатать(сушеф для отображения), время печати)
+        </span>
+      </td>
+      <td style="border:2px solid var(--accent); padding:6px; font-size:12px;"><em>Название</em></td>
+      <td style="border:2px solid var(--accent); padding:6px; font-size:12px;"><em>Место печати(Отображения)</em></td>
+      <td style="border:2px solid var(--accent); padding:6px; font-size:12px;"><em>Время приготовления</em></td>
+      <td style="border:2px solid var(--accent); padding:6px; font-size:12px;"><em>Склад реализации</em></td>
+    </tr>
+  </table>
+
+  <!-- Таблица для PDF: опции кухни -->
+  <div class="section-title">Опции кухни</div>
+  <table id="pdfKitchenOptionsTable" style="width:100%; border-collapse:collapse; margin-top:6px; border:2px solid var(--accent); font-size:12px;">
+    <tr>
+      <td style="border:2px solid var(--accent); padding:6px; font-weight:600; width:30%;">Будут терминалы повара</td>
+      <td id="pdfChefTerminals" style="border:2px solid var(--accent); padding:6px; width:10%; text-align:center;"></td>
+      <td style="border:2px solid var(--accent); padding:6px; font-weight:600; width:30%;">Будут вторые экраны</td>
+      <td id="pdfSecondScreens" style="border:2px solid var(--accent); padding:6px; width:10%; text-align:center;"></td>
+    </tr>
+    <tr>
+      <td style="border:2px solid var(--accent); padding:6px; font-weight:600;">Будут электронные очереди</td>
+      <td id="pdfElectronicQueues" style="border:2px solid var(--accent); padding:6px; text-align:center;"></td>
+      <td style="border:2px solid var(--accent); padding:6px; font-weight:600;">Будут интегрированные весы</td>
+      <td id="pdfIntegratedScales" style="border:2px solid var(--accent); padding:6px; text-align:center;"></td>
+    </tr>
+  </table>
+
+
+          <div class="section-title">Типы оплат</div>
+          <table id="pdfPaymentTypesTable" style="width:100%; border-collapse:collapse; margin-top:6px; border:2px solid var(--accent); font-size:12px;">
+            <tr>
+              <td id="pdfPaymentTypesCell" rowspan="1" style="border:2px solid var(--accent); padding:6px; font-weight:600; width:30%; font-size:12px;">
+                Типы оплат<br>
+                <span style="font-weight:normal; font-size:12px;">
+                  (Базовые - наличные, безналичные, банковские, внешние)
+                </span>
+              </td>
+              <td style="border:2px solid var(--accent); padding:6px; font-size:12px;"><em>Название</em></td>
+              <td style="border:2px solid var(--accent); padding:6px; font-size:12px;"><em>Фискальный</em></td>
+              <td style="border:2px solid var(--accent); padding:6px; font-size:12px;"><em>Принимать из вне</em></td>
+              <td style="border:2px solid var(--accent); padding:6px; font-size:12px;"><em>Комбинируется ли с другими</em></td>
+              <td style="border:2px solid var(--accent); padding:6px; font-size:12px;"><em>Логика работы</em></td>
+            </tr>
+          </table>
+
+          <div class="pdf-section" id="pdfAdditionalSettingsSection">
+            <div class="pdf-cards" id="pdfAdditionalSettingsCards"></div>
+          </div>
+
+          <!-- PDF section order rearranged as per instructions -->
+          <div class="page-break"></div>
+          <div class="section-title force-break">Залы</div>
+          <table id="pdfHallsTable" style="width:100%; border-collapse:collapse; margin-top:6px; border:2px solid var(--accent); font-size:12px;">
+            <tr>
+              <td id="pdfHallsCell" rowspan="1" style="border:2px solid var(--accent); padding:6px; font-weight:600; width:30%; font-size:12px;">
+                Залы
+              </td>
+              <td style="border:2px solid var(--accent); padding:6px; font-size:12px;"><em>Название</em></td>
+              <td style="border:2px solid var(--accent); padding:6px; font-size:12px;"><em>Количество столов</em></td>
+            </tr>
+          </table>
+          <div class="pdf-section" id="pdfCashShiftsSection">
+            <div class="section-title">Кассовые смены</div>
+            <div class="pdf-cards" id="pdfCashShiftsCards"></div>
+          </div>
+
+          <div class="pdf-section" id="pdfTaxOptionsSection">
+            <div class="section-title">Система налогообложения, маркировка, ЕГАИС</div>
+            <div class="pdf-cards" id="pdfTaxOptionsCards"></div>
+          </div>
+
+          <div class="pdf-section" id="pdfAlcoholSection">
+            <div class="section-title">Алкоголь</div>
+            <div class="pdf-cards" id="pdfAlcoholCards"></div>
+          </div>
+
+          <div class="pdf-section" id="pdfPrintReportsSection">
+            <div class="section-title">Печатать отчеты при закрытии КС</div>
+            <div class="pdf-card">
+              <div class="k">Выбранные отчеты</div>
+              <div class="pdf-badges" id="pdfPrintReportsBadges"></div>
+            </div>
+          </div>
+          <div class="section-title">Сотрудники и должности</div>
+          <table id="pdfPositionsTable" class="page-break" style="width:100%; border-collapse:collapse; margin-top:12px; border:2px solid var(--accent); font-size:12px;">
+            <tr>
+              <td id="pdfPositionsCell" rowspan="1" style="border:2px solid var(--accent); padding:6px; font-weight:600; width:30%; font-size:12px;">
+                Должности
+              </td>
+              <td style="border:2px solid var(--accent); padding:6px; font-size:12px;"><em>Название</em></td>
+              <td style="border:2px solid var(--accent); padding:6px; font-size:12px;"><em>Описание прав доступа * **</em></td>
+            </tr>
+          </table>
+          <div id="pdfPositionsNote" style="margin-top:8px; font-size:10px; color:#555; display:none;">
+            *по-умолчанию, мы не предоставляем прав доступа для системного администрирования, если вы понимаете что это и имеете необходимость в совершении данных манипуляций - направьте нам официальное письмо с запросом данных прав.<br><br>
+            **компания Мультибит не несет ответсвенности за предоставляемые права доступа сотрудникам предприятия, все предложения несут консультационый характер. Огромная просьба в максимально короткое время после перехода на iiko удостовериться, что права доступа сотрудников исчерпывающие и не идут в разрез с политикой безопастности Вашей компании. Все изменения, касаемые прав доступа принимаются в писменном виде, при обращении в Техническую поддержку Мультибит.
+          </div>
+          <div class="pdf-section" id="pdfEmployeesSection">
+            <div class="pdf-cards" id="pdfEmployeesCards"></div>
+          </div>
+          <div class="page-break"></div>
+          <div class="section-title force-break">Скидки и бонусы</div>
+          <table id="pdfSimpleDiscountsTable" class="page-break" style="width:100%; border-collapse:collapse; margin-top:6px; border:2px solid var(--accent); font-size:12px;">
+            <tr>
+              <td id="pdfSimpleDiscountsCell" rowspan="1" style="border:2px solid var(--accent); padding:6px; font-weight:600; width:30%;">Простые скидки</td>
+              <td style="border:2px solid var(--accent); padding:6px; font-size:12px;"><em>Название</em></td>
+              <td style="border:2px solid var(--accent); padding:6px; font-size:12px;"><em>Логика работы</em></td>
+            </tr>
+          </table>
+          <div class="pdf-cards compact" id="pdfDiscountsExtraCards"></div>
+          <div class="pdf-section" id="pdfDeliverySection">
+            <div class="section-title">Доставка</div>
+            <div class="pdf-cards" id="pdfDeliveryCards"></div>
+          </div>
+          <div id="pdfInstallation" style="margin-top:6px; font-size:12px; font-weight:600;"></div>
+          <div id="pdfExclusiveMode" style="margin-top:4px; font-size:12px; font-weight:600;"></div>
+          <div id="pdfIikoWebRights" style="margin-top:4px; font-size:12px; font-weight:600;"></div>
+  <table id="pdfAdvancedSettings" style="width:100%; border-collapse:collapse; margin-top:6px; border:2px solid var(--accent); font-size:12px;">
+    <tr>
+      <td style="border:2px solid var(--accent); padding:6px; font-weight:600; width:40%; font-size:12px;">Дополнительные реализации</td>
+      <td id="pdfAdvancedSettingsValue" style="border:2px solid var(--accent); padding:6px; width:60%; font-size:12px;"></td>
+    </tr>
+  </table>
+
+          <div class="abstract">РЕСТ</div>
+
+          <!-- Подписи и ответственный внизу PDF -->
+          <footer class="pdf-foot">
+            <div></div>
+          </footer>
+        </div>
+      </div>
+    </div>
+
+  </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

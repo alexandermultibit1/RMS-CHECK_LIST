@@ -1,0 +1,78 @@
+    :root{--accent:#ff2e2e;--bg:#ffffff;--muted:#666}
+    body{font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:linear-gradient(180deg,#fff 0%, #fff 70%); padding:24px}
+    .container{max-width:1100px;margin:0 auto}
+    header{display:flex;align-items:center;gap:16px}
+    .logo{display:flex;align-items:center;gap:12px}
+    .logo-square{width:46px;height:46px;background:var(--accent);border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:700}
+    /* Увеличенная версия логотипа при подстановке изображения */
+    .logo-square.logo-has-img{width:100px;height:100px;border-radius:16px}
+    h1{margin:0;color:var(--accent);font-size:20px}
+    p.lead{margin:4px 0 18px;color:var(--muted)}
+
+    .controls{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}
+    .card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,0.06)}
+
+    form .row{display:flex;gap:8px;margin-bottom:8px}
+    input,textarea,select{padding:8px;border-radius:8px;border:1px solid #eee;width:100%}
+    input[type="number"]{max-width:84px}
+    button{background:var(--accent);color:#fff;border:0;padding:10px 12px;border-radius:8px;cursor:pointer}
+    button.ghost{background:#fff;color:var(--accent);border:1px solid var(--accent)}
+
+    .table-wrap{margin-top:16px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #f2f2f2;text-align:left}
+    th{background:var(--accent);color:#fff;border-radius:4px}
+    td.action{width:72px}
+
+    /* PDF preview styles */
+    .pdf-sheet{width:700px;min-height:1123px;padding:36px;background:#fff;margin: 0 auto;box-shadow:0 10px 30px rgba(0,0,0,0.08);position:relative}
+    .pdf-header{display:flex;align-items:center;justify-content:space-between}
+    .pdf-logo{display:flex;align-items:center;gap:12px}
+    .pdf-logo .sq{width:44px;height:44px;border-radius:8px;background:var(--accent);display:grid;place-items:center;color:#fff;font-weight:700}
+    .pdf-logo .sq.logo-has-img{width:100px;height:100px;border-radius:16px}
+    /* Масштабирование фонового изображения логотипа */
+    .logo-square,.pdf-logo .sq{background-repeat:no-repeat;background-position:center;background-size:contain}
+    .pdf-title{color:var(--accent);font-size:18px;font-weight:700}
+    .pdf-meta{color:var(--muted);font-size:12px}
+
+    .abstract{position:absolute;right:-80px;top:40px;opacity:0.07;font-size:180px;color:var(--accent);transform:rotate(-20deg);pointer-events:none}
+    /* Вариант с изображением как печатью */
+    .abstract.abstract-has-img{font-size:0; width:450px; height:450px; right:-40px; top:-60px; opacity:0.08; transform:rotate(0deg); background-repeat:no-repeat; background-position:center; background-size:contain}
+
+    .pdf-table{margin-top:22px;border-collapse:collapse;width:100%}
+    .pdf-table th, .pdf-table td{border:1px solid #eee;padding:10px;font-size:12px}
+    .pdf-table th{background:#fafafa}
+
+    footer.pdf-foot{position:absolute;left:36px;right:36px;bottom:28px;border-top:1px dashed #eee;padding-top:10px;font-size:11px;color:var(--muted);display:flex;justify-content:space-between}
+
+    @media (max-width:900px){.pdf-sheet{transform:scale(0.7);transform-origin:top center}}
+    /* Tablet */
+    @media (max-width:900px){
+      body{padding:16px}
+      .controls{flex-direction:column}
+      .pdf-cards{grid-template-columns:1fr}
+    }
+    /* Mobile */
+    @media (max-width:600px){
+      body{padding:12px}
+      header{flex-direction:column;align-items:flex-start;gap:8px}
+      h1{font-size:18px}
+      .pdf-sheet{transform:scale(0.6);transform-origin:top center}
+      .pdf-title{font-size:16px}
+      .pdf-meta{font-size:11px}
+      .logo-square.logo-has-img{width:84px;height:84px}
+      .pdf-logo .sq.logo-has-img{width:84px;height:84px}
+    }
+    /* Small mobile */
+    @media (max-width:420px){
+      .pdf-sheet{transform:scale(0.5)}
+      .logo-square.logo-has-img{width:72px;height:72px}
+      .pdf-logo .sq.logo-has-img{width:72px;height:72px}
+      .abstract.abstract-has-img{width:360px;height:360px;right:-20px;top:-40px}
+    }
+
+    /* Принудительный перенос на новую страницу при печати PDF */
+    .page-break {
+      page-break-before: always; /* Для печати */
+      break-before: page; /* Для современных браузеров */
+    }
